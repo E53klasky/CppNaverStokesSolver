@@ -39,6 +39,32 @@ void parameterPrint(int numPoints , float domainSize , float timeStep ,
 	std::cout << "***************************************************************************\n";
 }
 // ---------------------------------------------------------------------------
+
+// probly have to test this
+std::pair<std::vector<double> , std::vector<double>> centralDifference(std::vector<std::vector<double>>& fx ,
+	std::vector<std::vector<double>>& fy , double elementLength) {
+	std::vector<double> diffx(fx.size());
+	std::vector<double> diffy()(fy.size());
+	int numPoints = fx.size();
+
+	for (size_t i = 0; i < numPoints; i++)
+	{
+		for (size_t j = 0; j < numPoints; j++)
+		{
+			int center = i * numPoints + j;
+			int right = i * numPoints + (j + 1);
+			int left = i * numPoints + (j - 1);
+			diffx[center] = (f[right] - f[left]) / (2.0 * elementLength);
+			diffyp[center] = (f[right] - f[left]) / (2.0 * elementLength);
+
+		}
+
+	}
+
+	// this will be a central difference funcion 
+	return std::make_pair(diffx , diffy);
+}
+
 int main() {
 
 	// parms setting ---------------------------------
@@ -57,6 +83,27 @@ int main() {
 		statbilitySafetyFactor);
 	// end of parms  ---------------------------------	
 
+	float elementLength = domainSize / (numPoints - 1);
+	std::vector<double> x(numPoints);
+	std::vector<double> y(numPoints);
+	for (int i = 0; i < numPoints; ++i) {
+		x[i] = i * elementLength;
+	}
+	y = x;
+	std::vector<double> u_prev(numPoints * numPoints , 0.0);
+	std::vector<double> v_prev(numPoints * numPoints , 0.0);
+	std::vector<double> p_prev(numPoints * numPoints , 0.0);
+
+
+
+
+
+
+
+	// moving foward in time
+	std::vector<double> u_next = u_prev;
+	std::vector<double> v_next = v_prev;
+	std::vector<double> p_next = p_prev;
 
 
 	return 0;
