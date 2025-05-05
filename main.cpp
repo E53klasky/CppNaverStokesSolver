@@ -13,6 +13,7 @@
 #include "adios2.h"
 #include "mgard/compress_x.hpp"
 
+// python example here: https://github.com/Ceyron/machine-learning-and-simulation/blob/main/english/simulation_scripts/lid_driven_cavity_python_simple.py 
 
 // Enhanced parameter print ---------------------------------
 void parameterPrint(int numPoints , float domainSize , float timeStep ,
@@ -55,6 +56,8 @@ int main() {
 		horizontalVelocityTop , NumPressurePoissonIterations ,
 		statbilitySafetyFactor);
 	// end of parms  ---------------------------------	
+
+
 
 	return 0;
 
