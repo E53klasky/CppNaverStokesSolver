@@ -40,30 +40,75 @@ void parameterPrint(int numPoints , float domainSize , float timeStep ,
 }
 // ---------------------------------------------------------------------------
 
-// probly have to test this
-std::pair<std::vector<double> , std::vector<double>> centralDifference(std::vector<std::vector<double>>& fx ,
-	std::vector<std::vector<double>>& fy , double elementLength) {
-	std::vector<double> diffx(fx.size());
-	std::vector<double> diffy()(fy.size());
-	int numPoints = fx.size();
+// index method
+int idx(int i , int j , int N) {
+	return i * N + j;
+}
 
-	for (size_t i = 0; i < numPoints; i++)
-	{
-		for (size_t j = 0; j < numPoints; j++)
-		{
-			int center = i * numPoints + j;
-			int right = i * numPoints + (j + 1);
-			int left = i * numPoints + (j - 1);
-			diffx[center] = (f[right] - f[left]) / (2.0 * elementLength);
-			diffyp[center] = (f[right] - f[left]) / (2.0 * elementLength);
 
+// difference methods -------------------------------------------
+std::vector<double> centralDifferenceX(const std::vector<double>& f , int N , double dx) {
+	std::vector<double> diff(N * N , 0.0);
+
+	for (int i = 1; i < N - 1; ++i) {
+		for (int j = 1; j < N - 1; ++j) {
+			int center = idx(i , j , N);
+			int left = idx(i , j - 1 , N);
+			int right = idx(i , j + 1 , N);
+
+			diff[center] = (f[right] - f[left]) / (2.0 * dx);
 		}
-
 	}
 
-	// this will be a central difference funcion 
-	return std::make_pair(diffx , diffy);
+	return diff;
 }
+
+std::vector<double> centralDifferenceY(
+	const std::vector<double>& f ,
+	int rows ,
+	int cols ,
+	double elementLength
+) {
+	std::vector<double> diff(rows * cols , 0.0);
+
+	for (int i = 1; i < rows - 1; ++i) {
+		for (int j = 1; j < cols - 1; ++j) {
+			int center = idx(i , j , cols);
+			int up = idx(i + 1 , j , cols);
+			int down = idx(i - 1 , j , cols);
+
+			diff[center] = (f[up] - f[down]) / (2.0 * elementLength);
+		}
+	}
+
+	return diff;
+}
+// --------------------------------------------------------------------------
+
+// laplacian method
+std::vector<double> laplacian(
+	const std::vector<double>& f ,
+	int rows ,
+	int cols ,
+	double elementLength
+) {
+	std::vector<double> laplacian(rows * cols , 0.0);
+
+	for (int i = 1; i < rows - 1; ++i) {
+		for (int j = 1; j < cols - 1; ++j) {
+			int center = idx(i , j , cols);
+			int up = idx(i + 1 , j , cols);
+			int down = idx(i - 1 , j , cols);
+			int left = idx(i , j - 1 , cols);
+			int right = idx(i , j + 1 , cols);
+
+			laplacian[center] = (f[up] + f[down] + f[left] + f[right] - 4.0 * f[center]) / (elementLength * elementLength);
+		}
+	}
+
+	return laplacian;
+}
+// --------------------------------------------------------------------------
 
 int main() {
 
