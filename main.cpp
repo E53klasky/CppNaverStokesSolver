@@ -1,17 +1,5 @@
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <vector>
-#include <thread>
-#include <chrono>
-#include <dirent.h>
-#include <random>
-#include <iostream>
-#include <algorithm>  
-#include <string.h>
-#include <iomanip>
-#include "adios2.h"
-#include "mgard/compress_x.hpp"
+#include "mathFunc.h"
+// TODO: at the 200 line convert the python to the 328 line + wright out the data 
 
 // python example here: https://github.com/Ceyron/machine-learning-and-simulation/blob/main/english/simulation_scripts/lid_driven_cavity_python_simple.py 
 
@@ -40,75 +28,6 @@ void parameterPrint(int numPoints , float domainSize , float timeStep ,
 }
 // ---------------------------------------------------------------------------
 
-// index method
-int idx(int i , int j , int N) {
-	return i * N + j;
-}
-
-
-// difference methods -------------------------------------------
-std::vector<double> centralDifferenceX(const std::vector<double>& f , int N , double dx) {
-	std::vector<double> diff(N * N , 0.0);
-
-	for (int i = 1; i < N - 1; ++i) {
-		for (int j = 1; j < N - 1; ++j) {
-			int center = idx(i , j , N);
-			int left = idx(i , j - 1 , N);
-			int right = idx(i , j + 1 , N);
-
-			diff[center] = (f[right] - f[left]) / (2.0 * dx);
-		}
-	}
-
-	return diff;
-}
-
-std::vector<double> centralDifferenceY(
-	const std::vector<double>& f ,
-	int rows ,
-	int cols ,
-	double elementLength
-) {
-	std::vector<double> diff(rows * cols , 0.0);
-
-	for (int i = 1; i < rows - 1; ++i) {
-		for (int j = 1; j < cols - 1; ++j) {
-			int center = idx(i , j , cols);
-			int up = idx(i + 1 , j , cols);
-			int down = idx(i - 1 , j , cols);
-
-			diff[center] = (f[up] - f[down]) / (2.0 * elementLength);
-		}
-	}
-
-	return diff;
-}
-// --------------------------------------------------------------------------
-
-// laplacian method
-std::vector<double> laplacian(
-	const std::vector<double>& f ,
-	int rows ,
-	int cols ,
-	double elementLength
-) {
-	std::vector<double> laplacian(rows * cols , 0.0);
-
-	for (int i = 1; i < rows - 1; ++i) {
-		for (int j = 1; j < cols - 1; ++j) {
-			int center = idx(i , j , cols);
-			int up = idx(i + 1 , j , cols);
-			int down = idx(i - 1 , j , cols);
-			int left = idx(i , j - 1 , cols);
-			int right = idx(i , j + 1 , cols);
-
-			laplacian[center] = (f[up] + f[down] + f[left] + f[right] - 4.0 * f[center]) / (elementLength * elementLength);
-		}
-	}
-
-	return laplacian;
-}
-// --------------------------------------------------------------------------
 
 int main() {
 
@@ -119,8 +38,9 @@ int main() {
 	float kinematicViscoity = 0.1;
 	float density = 1.0;
 	float horizontalVelocityTop = 1.0;
-	int NumPressurePoissonIterations = 60;
+	int NumPressurePoissonIterations = 500;
 	float statbilitySafetyFactor = 0.5;
+
 
 	parameterPrint(numPoints , domainSize , timeStep ,
 		kinematicViscoity , density ,
@@ -128,24 +48,42 @@ int main() {
 		statbilitySafetyFactor);
 	// end of parms  ---------------------------------	
 
-	float elementLength = domainSize / (numPoints - 1);
+	double elementLength = domainSize / (numPoints - 1); // 1/40 = 0.025  
 	std::vector<double> x(numPoints);
 	std::vector<double> y(numPoints);
 	for (int i = 0; i < numPoints; ++i) {
 		x[i] = i * elementLength;
 	}
 	y = x;
-	std::vector<double> u_prev(numPoints * numPoints , 0.0);
-	std::vector<double> v_prev(numPoints * numPoints , 0.0);
-	std::vector<double> p_prev(numPoints * numPoints , 0.0);
+	int size = numPoints * numPoints;
+	std::vector<double> u_prev(size , 0.0);
+	std::vector<double> v_prev(size , 0.0);
+	std::vector<double> p_prev(size , 0.0);
+
+	double maxPossibleTimeStep = 0.5 * elementLength * elementLength / kinematicViscoity;
+	assert(maxPossibleTimeStep >= timeStep * maxPossibleTimeStep && "Time step is too large for stability! Killing the program.");
+	// maybe add it for div * U ????????????? later todo 
+
+	for (int iter = 0; iter < NumPressurePoissonIterations; ++iter) {
+		// bug in here??? 
+		std::vector<double> d_u_prev__d_x = centralDifferenceX(u_prev , size , elementLength);
+		std::vector<double> d_u_prev__d_y = centralDifferenceY(u_prev , size , elementLength);
+		std::vector<double> d_v_prev__d_x = centralDifferenceX(v_prev , size , elementLength);
+		std::vector<double> d_v_prev__d_y = centralDifferenceY(v_prev , size , elementLength);
+		std::vector<double> laplace__u_prev = laplacian(u_prev , size , elementLength);
+		std::vector<double> laplace__v_prev = laplacian(v_prev , size , elementLength);
+
+		// // Optional: simple progress print
+		// if (iter % 100 == 0) {
+		// 	std::cout << "Iteration " << iter << " / " << N_ITERATIONS << std::endl;
+		// }
+	}
 
 
 
 
 
-
-
-	// moving foward in time
+			// moving foward in time
 	std::vector<double> u_next = u_prev;
 	std::vector<double> v_next = v_prev;
 	std::vector<double> p_next = p_prev;
