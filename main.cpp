@@ -63,21 +63,39 @@ int main() {
 	double maxPossibleTimeStep = 0.5 * elementLength * elementLength / kinematicViscoity;
 	assert(timeStep <= maxPossibleTimeStep && "Time step is too large for stability! Killing the program.");
 
+	std::vector<double> duPrevdx(NumPressurePoissonIterations);
+	std::vector<double> duPrevdy(NumPressurePoissonIterations);
+	std::vector<double> dvPrevdx(NumPressurePoissonIterations);
+	std::vector<double> dvPrevdy(NumPressurePoissonIterations);
+	std::vector<double> uPrevLaplace(NumPressurePoissonIterations);
+	std::vector<double> vPrevLaplace(NumPressurePoissonIterations);
 
-	// push back values later
 	for (int iter = 0; iter < NumPressurePoissonIterations; ++iter) {
-		std::vector<double> duPrevdx = centralDifferenceX(u_prev , numPoints , elementLength);
-		std::vector<double> duPrevdy = centralDifferenceY(u_prev , numPoints , elementLength);
-		std::vector<double> dvPrevdx = centralDifferenceX(v_prev , numPoints , elementLength);
-		std::vector<double> dvPrevdy = centralDifferenceY(v_prev , numPoints , elementLength);
-		std::vector<double> uPrevLaplace = laplacian(u_prev , numPoints , elementLength);
-		std::vector<double> vPrevLaplace = laplacian(v_prev , numPoints , elementLength);
+		duPrevdx = centralDifferenceX(u_prev , numPoints , elementLength);
+		duPrevdy = centralDifferenceY(u_prev , numPoints , elementLength);
+		dvPrevdx = centralDifferenceX(v_prev , numPoints , elementLength);
+		dvPrevdy = centralDifferenceY(v_prev , numPoints , elementLength);
+		uPrevLaplace = laplacian(u_prev , numPoints , elementLength);
+		vPrevLaplace = laplacian(v_prev , numPoints , elementLength);
+		if (iter % 100 == 0) {
+			std::cout << "\n================== Iteration " << iter << " ==================\n";
+			std::cout << std::setw(20) << std::left << "duPrevdx" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << duPrevdx[iter] << "\n";
+			std::cout << std::setw(20) << std::left << "duPrevdy" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << duPrevdy[iter] << "\n";
+			std::cout << std::setw(20) << std::left << "dvPrevdx" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << dvPrevdx[iter] << "\n";
+			std::cout << std::setw(20) << std::left << "dvPrevdy" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << dvPrevdy[iter] << "\n";
+			std::cout << std::setw(20) << std::left << "uPrevLaplace" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << uPrevLaplace[iter] << "\n";
+			std::cout << std::setw(20) << std::left << "vPrevLaplace" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << vPrevLaplace[iter] << "\n";
+			std::cout << "======================================================\n";
+		}
+
+			// Time stepping (placeholders — implement update logic)
+		std::vector<double> u_next = u_prev;
+		std::vector<double> v_next = v_prev;
+		std::vector<double> p_next = p_prev;
+
 	}
 
-	// Time stepping (placeholders — implement update logic)
-	std::vector<double> u_next = u_prev;
-	std::vector<double> v_next = v_prev;
-	std::vector<double> p_next = p_prev;
+
 
 
 	return 0;
