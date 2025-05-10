@@ -61,29 +61,20 @@ int main() {
 	std::vector<double> p_prev(size , 0.0);
 
 	double maxPossibleTimeStep = 0.5 * elementLength * elementLength / kinematicViscoity;
-	assert(maxPossibleTimeStep >= timeStep * maxPossibleTimeStep && "Time step is too large for stability! Killing the program.");
-	// maybe add it for div * U ????????????? later todo 
+	assert(timeStep <= maxPossibleTimeStep && "Time step is too large for stability! Killing the program.");
 
+
+	// push back values later
 	for (int iter = 0; iter < NumPressurePoissonIterations; ++iter) {
-		// bug in here??? 
-		std::vector<double> d_u_prev__d_x = centralDifferenceX(u_prev , size , elementLength);
-		std::vector<double> d_u_prev__d_y = centralDifferenceY(u_prev , size , elementLength);
-		std::vector<double> d_v_prev__d_x = centralDifferenceX(v_prev , size , elementLength);
-		std::vector<double> d_v_prev__d_y = centralDifferenceY(v_prev , size , elementLength);
-		std::vector<double> laplace__u_prev = laplacian(u_prev , size , elementLength);
-		std::vector<double> laplace__v_prev = laplacian(v_prev , size , elementLength);
-
-		// // Optional: simple progress print
-		// if (iter % 100 == 0) {
-		// 	std::cout << "Iteration " << iter << " / " << N_ITERATIONS << std::endl;
-		// }
+		std::vector<double> duPrevdx = centralDifferenceX(u_prev , numPoints , elementLength);
+		std::vector<double> duPrevdy = centralDifferenceY(u_prev , numPoints , elementLength);
+		std::vector<double> dvPrevdx = centralDifferenceX(v_prev , numPoints , elementLength);
+		std::vector<double> dvPrevdy = centralDifferenceY(v_prev , numPoints , elementLength);
+		std::vector<double> uPrevLaplace = laplacian(u_prev , numPoints , elementLength);
+		std::vector<double> vPrevLaplace = laplacian(v_prev , numPoints , elementLength);
 	}
 
-
-
-
-
-			// moving foward in time
+	// Time stepping (placeholders — implement update logic)
 	std::vector<double> u_next = u_prev;
 	std::vector<double> v_next = v_prev;
 	std::vector<double> p_next = p_prev;
