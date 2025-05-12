@@ -1,5 +1,5 @@
 #include "mathFunc.h"
-// TODO: at the 100 line convert the python to the 328 line + wright out the data 
+#include <adios2.h>
 
 // python example here: https://github.com/Ceyron/machine-learning-and-simulation/blob/main/english/simulation_scripts/lid_driven_cavity_python_simple.py 
 
@@ -53,6 +53,18 @@ int main() {
 	double elementLength = domainSize / (numPoints - 1);
 	std::vector<double> x(numPoints);
 	std::vector<double> y(numPoints);
+
+		// adios declaration ---------------------------------------------------------
+	adios2::ADIOS adios;
+	adios2::IO io = adios.DeclareIO("SimulationOutput");
+	auto varU = io.DefineVariable<double>("u" , { numPoints , numPoints } , { 0,0 } , { numPoints , numPoints });
+	auto varV = io.DefineVariable<double>("v" , { numPoints , numPoints } , { 0,0 } , { numPoints , numPoints });
+	auto varP = io.DefineVariable<double>("p" , { numPoints , numPoints } , { 0,0 } , { numPoints , numPoints });
+
+	std::string filename = "data.bp";
+	adios2::Engine engine = io.Open(filename , adios2::Mode::Write);
+	// end of adios declaration -------------------------------------------------
+
 	for (int i = 0; i < numPoints; ++i) {
 		x[i] = i * elementLength;
 	}
@@ -239,10 +251,19 @@ int main() {
 		v_next = v_prev;
 		p_next = p_prev;
 
+
+		engine.Put(varU , u_next.data());
+		engine.Put(varV , v_next.data());
+		engine.Put(varP , p_next.data());
+		engine.EndStep();
+
+
+
 	}
 
 
 
+	engine.Close();
 
 	return 0;
 
