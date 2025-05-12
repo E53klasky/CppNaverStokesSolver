@@ -133,9 +133,13 @@ int main() {
 			u_tent[idx(numPoints - 1 , j , numPoints)] = horizontalVelocityTop;
 			v_tent[idx(numPoints - 1 , j , numPoints)] = 0.0;
 		}
+		std::vector<double> duTentdx(size);
+		std::vector<double> dvTentdy(size);
 
 
-			// Time stepping (placeholders — implement update logic)
+
+
+
 		std::vector<double> u_next = u_prev;
 		std::vector<double> v_next = v_prev;
 		std::vector<double> p_next = p_prev;
