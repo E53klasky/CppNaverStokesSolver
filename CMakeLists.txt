@@ -18,7 +18,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-O0 -g -Wall -Wextra)
 else()
     message(STATUS "Configuring Release build")
-    add_compile_options(-O3 -march=native -ffast-math -fopenmp -fopenmp-simd -Wall -Wextra)
+    add_compile_options(-Ofast -march=native -ffast-math -fopenmp -fopenmp-simd -Wall -Wextra)
 endif()
 
 add_executable(main main.cpp)

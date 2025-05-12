@@ -133,16 +133,111 @@ int main() {
 			u_tent[idx(numPoints - 1 , j , numPoints)] = horizontalVelocityTop;
 			v_tent[idx(numPoints - 1 , j , numPoints)] = 0.0;
 		}
-		std::vector<double> duTentdx(size);
-		std::vector<double> dvTentdy(size);
+		std::vector<double> duTentdx(size , 0.0);
+		std::vector<double> dvTentdy(size , 0.0);
 
 
+		duTentdx = centralDifferenceX(u_tent , numPoints , elementLength);
+		dvTentdy = centralDifferenceY(v_tent , numPoints , elementLength);
+
+		std::vector<double> rhs(size , 0.0);
+
+		for (int i = 1; i < numPoints - 1; ++i) {
+			for (int j = 1; j < numPoints - 1; ++j) {
+				int idx_val = idx(i , j , numPoints);
+				rhs[idx_val] = density / timeStep * (
+					duTentdx[idx_val] + dvTentdy[idx_val]
+					);
+			}
+		}
+		std::vector<double> p_next(size , 0.0);
+		p_next = p_prev;
+
+		for (int poisson_iter = 0; poisson_iter < NumPressurePoissonIterations; ++poisson_iter) {
+			std::vector<double> p_temp(size , 0.0);
+
+			for (int i = 1; i < numPoints - 1; ++i) {
+				for (int j = 1; j < numPoints - 1; ++j) {
+					int center = idx(i , j , numPoints);
+					int left = idx(i , j - 1 , numPoints);
+					int right = idx(i , j + 1 , numPoints);
+					int up = idx(i - 1 , j , numPoints);
+					int down = idx(i + 1 , j , numPoints);
+
+					p_temp[center] = 0.25 * (
+						p_next[left] + p_next[right] +
+						p_next[up] + p_next[down] -
+						elementLength * elementLength * rhs[center]
+						);
+				}
+			}
+
+			for (int i = 0; i < numPoints; ++i) {
+				p_temp[idx(i , 0 , numPoints)] = p_temp[idx(i , 1 , numPoints)];
+			}
+
+			for (int i = 0; i < numPoints; ++i) {
+				p_temp[idx(i , numPoints - 1 , numPoints)] = p_temp[idx(i , numPoints - 2 , numPoints)];
+			}
+
+			for (int j = 0; j < numPoints; ++j) {
+				p_temp[idx(0 , j , numPoints)] = p_temp[idx(1 , j , numPoints)];
+			}
 
 
+			for (int j = 0; j < numPoints; ++j) {
+				p_temp[idx(numPoints - 1 , j , numPoints)] = 0.0;
+			}
 
-		std::vector<double> u_next = u_prev;
-		std::vector<double> v_next = v_prev;
-		std::vector<double> p_next = p_prev;
+			p_next = p_temp;
+
+		}
+
+		std::vector<double> dpNextdx(size , 0.0);
+		std::vector<double> dpNextdy(size , 0.0);
+		dpNextdx = centralDifferenceX(p_next , numPoints , elementLength);
+		dpNextdy = centralDifferenceY(p_next , numPoints , elementLength);
+
+
+		std::vector<double> u_next(size , 0.0);
+		std::vector<double> v_next(size , 0.0);
+
+
+		for (int i = 1; i < numPoints - 1; ++i) {
+			for (int j = 1; j < numPoints - 1; ++j) {
+				int idx_val = idx(i , j , numPoints);
+
+				u_next[idx_val] = u_tent[idx_val] - timeStep / density * dpNextdx[idx_val];
+				v_next[idx_val] = v_tent[idx_val] - timeStep / density * dpNextdy[idx_val];
+			}
+		}
+
+
+		for (int j = 0; j < numPoints; ++j) {
+			u_next[idx(0 , j , numPoints)] = 0.0;
+			v_next[idx(0 , j , numPoints)] = 0.0;
+		}
+
+
+		for (int i = 0; i < numPoints; ++i) {
+			u_next[idx(i , 0 , numPoints)] = 0.0;
+			v_next[idx(i , 0 , numPoints)] = 0.0;
+		}
+
+		for (int i = 0; i < numPoints; ++i) {
+			u_next[idx(i , numPoints - 1 , numPoints)] = 0.0;
+			v_next[idx(i , numPoints - 1 , numPoints)] = 0.0;
+		}
+
+		for (int j = 0; j < numPoints; ++j) {
+			u_next[idx(numPoints - 1 , j , numPoints)] = horizontalVelocityTop;
+			v_next[idx(numPoints - 1 , j , numPoints)] = 0.0;
+		}
+
+
+		u_next = u_prev;
+		v_next = v_prev;
+		p_next = p_prev;
 
 	}
 
