@@ -40,7 +40,8 @@ int main() {
 	float kinematicViscosity = 0.1;
 	float density = 1.0;
 	float horizontalVelocityTop = 1.0;
-	int NumPressurePoissonIterations = 500;
+	int NumPressurePoissonIterations = 50;
+	int numIterations = 500;
 	float statbilitySafetyFactor = 0.5;
 
 
@@ -54,7 +55,7 @@ int main() {
 	std::vector<double> x(numPoints);
 	std::vector<double> y(numPoints);
 
-		// adios declaration ---------------------------------------------------------
+	// adios declaration ---------------------------------------------------------
 	adios2::ADIOS adios;
 	adios2::IO io = adios.DeclareIO("SimulationOutput");
 	auto varU = io.DefineVariable<double>("u" , { numPoints , numPoints } , { 0,0 } , { numPoints , numPoints });
@@ -76,38 +77,34 @@ int main() {
 
 	double maxPossibleTimeStep = 0;
 	maxPossibleTimeStep = 0.5 * elementLength * elementLength / kinematicViscosity;
-	assert(timeStep <= maxPossibleTimeStep && "Time step is too large for stability! Killing the program.");
+	if (timeStep > statbilitySafetyFactor * maxPossibleTimeStep) {
+		std::cerr << "Time step is too large for stability! Killing the program." << std::endl;
+		return 1;
+	}
 
-	std::vector<double> duPrevdx(NumPressurePoissonIterations);
-	std::vector<double> duPrevdy(NumPressurePoissonIterations);
-	std::vector<double> dvPrevdx(NumPressurePoissonIterations);
-	std::vector<double> dvPrevdy(NumPressurePoissonIterations);
-	std::vector<double> uPrevLaplace(NumPressurePoissonIterations);
-	std::vector<double> vPrevLaplace(NumPressurePoissonIterations);
-
-	std::vector<double> u_tent(size);
-	std::vector<double> v_tent(size);
+	for (int iter = 0; iter < numIterations; ++iter) {
+		std::vector<double> duPrevdx = centralDifferenceX(u_prev , numPoints , elementLength);
+		std::vector<double> duPrevdy = centralDifferenceY(u_prev , numPoints , elementLength);
+		std::vector<double> dvPrevdx = centralDifferenceX(v_prev , numPoints , elementLength);
+		std::vector<double> dvPrevdy = centralDifferenceY(v_prev , numPoints , elementLength);
+		std::vector<double> uPrevLaplace = laplacian(u_prev , numPoints , elementLength);
+		std::vector<double> vPrevLaplace = laplacian(v_prev , numPoints , elementLength);
 
 
-
-	for (int iter = 0; iter < NumPressurePoissonIterations; ++iter) {
-		duPrevdx = centralDifferenceX(u_prev , numPoints , elementLength);
-		duPrevdy = centralDifferenceY(u_prev , numPoints , elementLength);
-		dvPrevdx = centralDifferenceX(v_prev , numPoints , elementLength);
-		dvPrevdy = centralDifferenceY(v_prev , numPoints , elementLength);
-		uPrevLaplace = laplacian(u_prev , numPoints , elementLength);
-		vPrevLaplace = laplacian(v_prev , numPoints , elementLength);
-		// this will be compinted out when the code is finished
 		if (iter % 100 == 0) {
 			std::cout << "\n================== Iteration " << iter << " ==================\n";
-			std::cout << std::setw(20) << std::left << "duPrevdx" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << duPrevdx[iter] << "\n";
-			std::cout << std::setw(20) << std::left << "duPrevdy" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << duPrevdy[iter] << "\n";
-			std::cout << std::setw(20) << std::left << "dvPrevdx" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << dvPrevdx[iter] << "\n";
-			std::cout << std::setw(20) << std::left << "dvPrevdy" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << dvPrevdy[iter] << "\n";
-			std::cout << std::setw(20) << std::left << "uPrevLaplace" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << uPrevLaplace[iter] << "\n";
-			std::cout << std::setw(20) << std::left << "vPrevLaplace" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << vPrevLaplace[iter] << "\n";
+			int sampleIdx = idx(numPoints / 2 , numPoints / 2 , numPoints);
+			std::cout << std::setw(20) << std::left << "duPrevdx sample" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << duPrevdx[sampleIdx] << "\n";
+			std::cout << std::setw(20) << std::left << "duPrevdy sample" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << duPrevdy[sampleIdx] << "\n";
+			std::cout << std::setw(20) << std::left << "dvPrevdx sample" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << dvPrevdx[sampleIdx] << "\n";
+			std::cout << std::setw(20) << std::left << "dvPrevdy sample" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << dvPrevdy[sampleIdx] << "\n";
+			std::cout << std::setw(20) << std::left << "uPrevLaplace sample" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << uPrevLaplace[sampleIdx] << "\n";
+			std::cout << std::setw(20) << std::left << "vPrevLaplace sample" << std::setw(15) << std::right << std::fixed << std::setprecision(6) << vPrevLaplace[sampleIdx] << "\n";
 			std::cout << "======================================================\n";
 		}
+
+		std::vector<double> u_tent(size , 0.0);
+		std::vector<double> v_tent(size , 0.0);
 
 		for (int i = 0; i < numPoints; ++i) {
 			for (int j = 0; j < numPoints; ++j) {
@@ -125,6 +122,7 @@ int main() {
 					);
 			}
 		}
+
 
 		for (int j = 0; j < numPoints; ++j) {
 			u_tent[idx(0 , j , numPoints)] = 0.0;
@@ -145,12 +143,9 @@ int main() {
 			u_tent[idx(numPoints - 1 , j , numPoints)] = horizontalVelocityTop;
 			v_tent[idx(numPoints - 1 , j , numPoints)] = 0.0;
 		}
-		std::vector<double> duTentdx(size , 0.0);
-		std::vector<double> dvTentdy(size , 0.0);
 
-
-		duTentdx = centralDifferenceX(u_tent , numPoints , elementLength);
-		dvTentdy = centralDifferenceY(v_tent , numPoints , elementLength);
+		std::vector<double> duTentdx = centralDifferenceX(u_tent , numPoints , elementLength);
+		std::vector<double> dvTentdy = centralDifferenceY(v_tent , numPoints , elementLength);
 
 		std::vector<double> rhs(size , 0.0);
 
@@ -162,8 +157,9 @@ int main() {
 					);
 			}
 		}
-		std::vector<double> p_next(size , 0.0);
-		p_next = p_prev;
+
+		std::vector<double> p_next = p_prev;
+
 
 		for (int poisson_iter = 0; poisson_iter < NumPressurePoissonIterations; ++poisson_iter) {
 			std::vector<double> p_temp(size , 0.0);
@@ -184,6 +180,7 @@ int main() {
 				}
 			}
 
+
 			for (int i = 0; i < numPoints; ++i) {
 				p_temp[idx(i , 0 , numPoints)] = p_temp[idx(i , 1 , numPoints)];
 			}
@@ -196,25 +193,20 @@ int main() {
 				p_temp[idx(0 , j , numPoints)] = p_temp[idx(1 , j , numPoints)];
 			}
 
-
 			for (int j = 0; j < numPoints; ++j) {
 				p_temp[idx(numPoints - 1 , j , numPoints)] = 0.0;
 			}
 
 			p_next = p_temp;
-
 		}
 
-		std::vector<double> dpNextdx(size , 0.0);
-		std::vector<double> dpNextdy(size , 0.0);
-		dpNextdx = centralDifferenceX(p_next , numPoints , elementLength);
-		dpNextdy = centralDifferenceY(p_next , numPoints , elementLength);
-
+		std::vector<double> dpNextdx = centralDifferenceX(p_next , numPoints , elementLength);
+		std::vector<double> dpNextdy = centralDifferenceY(p_next , numPoints , elementLength);
 
 		std::vector<double> u_next(size , 0.0);
 		std::vector<double> v_next(size , 0.0);
 
-
+		// Velocity correction
 		for (int i = 1; i < numPoints - 1; ++i) {
 			for (int j = 1; j < numPoints - 1; ++j) {
 				int idx_val = idx(i , j , numPoints);
@@ -224,12 +216,11 @@ int main() {
 			}
 		}
 
-
+		// Apply velocity boundary conditions
 		for (int j = 0; j < numPoints; ++j) {
 			u_next[idx(0 , j , numPoints)] = 0.0;
 			v_next[idx(0 , j , numPoints)] = 0.0;
 		}
-
 
 		for (int i = 0; i < numPoints; ++i) {
 			u_next[idx(i , 0 , numPoints)] = 0.0;
@@ -247,24 +238,21 @@ int main() {
 		}
 
 
-		u_next = u_prev;
-		v_next = v_prev;
-		p_next = p_prev;
+		u_prev = u_next;
+		v_prev = v_next;
+		p_prev = p_next;
 
 
-		engine.Put(varU , u_next.data());
-		engine.Put(varV , v_next.data());
-		engine.Put(varP , p_next.data());
+		engine.BeginStep();
+		engine.Put(varU , u_prev.data());
+		engine.Put(varV , v_prev.data());
+		engine.Put(varP , p_prev.data());
 		engine.EndStep();
-
-
 
 	}
 
-
-
 	engine.Close();
-
+	std::cout << "Simulation completed successfully" << std::endl;
+	std::cout << "Data written to " << filename << " in the same place as the exe" << std::endl;
 	return 0;
-
 }
