@@ -1,3 +1,0 @@
-TODO:
-    debug code see why it is all 0
-    make python code to look at results
